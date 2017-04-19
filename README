@@ -1,0 +1,4 @@
+#usage
+docker service  create -e "VIRTUAL_HOST=**.com" **
+docker run -d  -v /var/run/docker.sock:/tmp/docker.sock:ro -p 8095:80 wanghaibo/ingress 
+
