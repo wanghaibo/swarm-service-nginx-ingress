@@ -16,3 +16,5 @@ docker build ./ -t wanghaibo/ingress -f Dockerfile.alpine  --no-cache
 ```sh
 docker exec ingress /app/docker-entrypoint.sh  reload
 ```
+## todo
+waiting for events for services https://github.com/moby/moby/pull/32421
