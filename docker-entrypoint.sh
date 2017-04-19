@@ -21,6 +21,9 @@ if [ "$1" = "" ]; then
         swarm-service-nginx-ingress -tpl="/app/nginx.tpl" -dst="/etc/nginx/conf.d/default.conf"
         nginx
     fi
+elif [ "$1" = "reload" ]; then
+    swarm-service-nginx-ingress -tpl="/app/nginx.tpl" -dst="/etc/nginx/conf.d/default.conf"
+    nginx -s reload
 else 
     exec "$@"
 fi
