@@ -1,6 +1,6 @@
 {{range .}}
 server {
-    server_name {{.VirtualHost}}
+    server_name {{.VirtualHost}};
     listen 80;
     location / {
         proxy_set_header Host $host;
