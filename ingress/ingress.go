@@ -30,7 +30,7 @@ func NewIngress(client *client.Client) *Ingress {
 }
 
 func (i *Ingress) Render(tplPath string, wr io.Writer) error {
-	var virtualHostServices []*VirtualHostService
+	var virtualHostServices = make(map[string]*VirtualHostService)
 	services, _ := i.client.ServiceList(context.Background(), types.ServiceListOptions{})
 
 	for _, service := range services {
@@ -39,15 +39,14 @@ func (i *Ingress) Render(tplPath string, wr io.Writer) error {
 		envMap := i.parseEnv(env)
 
 		if v, ok := envMap[virtualHostEnvKey]; ok && (len(vips) > 0) {
-
-			virtualHostServices = append(
-				virtualHostServices,
-				&VirtualHostService{
+			//remove repeat host
+			for _, host := range v {
+				virtualHostServices[host] = &VirtualHostService{
+					VirtualHost: host,
 					Vip:         strings.Split(service.Endpoint.VirtualIPs[0].Addr, "/")[0],
 					Port:        "80",
-					VirtualHost: v,
-				},
-			)
+				}
+			}
 		}
 	}
 
@@ -62,12 +61,12 @@ func (i *Ingress) Render(tplPath string, wr io.Writer) error {
 	return nil
 }
 
-func (i *Ingress) parseEnv(env []string) map[string]string {
-	envMap := map[string]string{}
+func (i *Ingress) parseEnv(env []string) map[string][]string {
+	envMap := map[string][]string{}
 	for _, e := range env {
 		vs := strings.Split(e, "=")
 		if len(vs) == 2 {
-			envMap[vs[0]] = vs[1]
+			envMap[vs[0]] = strings.Split(vs[1], ",")
 		}
 	}
 	return envMap
