@@ -2,6 +2,7 @@ package ingress
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -11,7 +12,10 @@ import (
 	"github.com/docker/docker/client"
 )
 
-var virtualHostEnvKey = "VIRTUAL_HOST"
+const (
+	virtualHostEnvKey = "VIRTUAL_HOST"
+	virtualPortEnvKey = "VIRTUAL_PORT"
+)
 
 type Ingress struct {
 	client *client.Client
@@ -38,14 +42,20 @@ func (i *Ingress) Render(tplPath string, wr io.Writer) error {
 		vips := service.Endpoint.VirtualIPs
 		envMap := i.parseEnv(env)
 
-		if v, ok := envMap[virtualHostEnvKey]; ok && (len(vips) > 0) {
-			//remove repeat host
-			for _, host := range v {
-				virtualHostServices[host] = &VirtualHostService{
-					VirtualHost: host,
-					Vip:         strings.Split(service.Endpoint.VirtualIPs[0].Addr, "/")[0],
-					Port:        "80",
-				}
+		if hosts, ok := envMap[virtualHostEnvKey]; ok && len(vips) > 0 && len(hosts) > 0 {
+			var port string
+			if envPort, ok := envMap[virtualPortEnvKey]; ok {
+				port = envPort
+			} else if len(service.Endpoint.Ports) == 1 {
+				port = strconv.Itoa(int(service.Endpoint.Ports[0].TargetPort))
+			} else {
+				port = "80"
+			}
+
+			virtualHostServices[hosts] = &VirtualHostService{
+				VirtualHost: hosts,
+				Vip:         strings.Split(service.Endpoint.VirtualIPs[0].Addr, "/")[0],
+				Port:        port,
 			}
 		}
 	}
@@ -61,12 +71,16 @@ func (i *Ingress) Render(tplPath string, wr io.Writer) error {
 	return nil
 }
 
-func (i *Ingress) parseEnv(env []string) map[string][]string {
-	envMap := map[string][]string{}
+func (i *Ingress) parseEnv(env []string) map[string]string {
+	envMap := map[string]string{}
 	for _, e := range env {
 		vs := strings.Split(e, "=")
 		if len(vs) == 2 {
-			envMap[vs[0]] = strings.Split(vs[1], ",")
+			if vs[0] == virtualHostEnvKey {
+				envMap[vs[0]] = strings.Replace(vs[1], ",", " ", -1)
+			} else {
+				envMap[vs[0]] = vs[1]
+			}
 		}
 	}
 	return envMap
