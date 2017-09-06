@@ -15,7 +15,7 @@ func TestRender(t *testing.T) {
 	}
 
 	ingress := NewIngress(cli)
-	err = ingress.Render("./nginx.tpl", os.Stdout)
+	err = ingress.Render("./test.tpl", os.Stdout)
 	if err != nil {
 		t.Error(err)
 	}

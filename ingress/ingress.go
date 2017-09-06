@@ -15,6 +15,7 @@ import (
 const (
 	virtualHostEnvKey = "VIRTUAL_HOST"
 	virtualPortEnvKey = "VIRTUAL_PORT"
+	virtualPathEnvKey = "VIRTUAL_PATH"
 )
 
 type Ingress struct {
@@ -25,6 +26,7 @@ type VirtualHostService struct {
 	VirtualHost string
 	Vip         string
 	Port        string
+	Path        string
 }
 
 func NewIngress(client *client.Client) *Ingress {
@@ -34,7 +36,7 @@ func NewIngress(client *client.Client) *Ingress {
 }
 
 func (i *Ingress) Render(tplPath string, wr io.Writer) error {
-	var virtualHostServices = make(map[string]*VirtualHostService)
+	var virtualHostServices = make(map[string]map[string]*VirtualHostService)
 	services, _ := i.client.ServiceList(context.Background(), types.ServiceListOptions{})
 
 	for _, service := range services {
@@ -52,10 +54,21 @@ func (i *Ingress) Render(tplPath string, wr io.Writer) error {
 				port = "80"
 			}
 
-			virtualHostServices[hosts] = &VirtualHostService{
-				VirtualHost: hosts,
-				Vip:         strings.Split(service.Endpoint.VirtualIPs[0].Addr, "/")[0],
-				Port:        port,
+			var path string
+			if envPath, ok := envMap[virtualPathEnvKey]; ok {
+				path = envPath
+			} else {
+				path = "/"
+			}
+
+			if _, ok := virtualHostServices[hosts]; !ok {
+				virtualHostServices[hosts] = make(map[string]*VirtualHostService)
+			}
+
+			virtualHostServices[hosts][path] = &VirtualHostService{
+				Vip:  strings.Split(service.Endpoint.VirtualIPs[0].Addr, "/")[0],
+				Port: port,
+				Path: path,
 			}
 		}
 	}

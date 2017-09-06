@@ -1,15 +1,17 @@
-{{range .}}
+{{range $host,$value := .}}
 server {
-    server_name {{.VirtualHost}};
+    server_name {{$host}}
     listen 80;
-    location / {
+    {{range $value}}
+    location {{.Path}} {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_pass http://{{.Vip}}:{{.Port}};
     }
-    
+    {{end}}
 }
 {{end}}
+
 
 # If we receive X-Forwarded-Proto, pass it through; otherwise, pass along the
 # scheme used to connect to this server
