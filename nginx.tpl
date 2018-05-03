@@ -61,5 +61,5 @@ proxy_set_header X-Forwarded-Port $proxy_x_forwarded_port;
 # Mitigate httpoxy attack (see README for details)
 proxy_set_header Proxy "";
 
-
+client_max_body_size 80m;
 
